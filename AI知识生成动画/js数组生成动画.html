@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JavaScript 数组操作方法动画演示</title>
+    <!-- 引入 Vue 3 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.47/dist/vue.global.min.js"></script>
+    <!-- 引入 GSAP 动画库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <!-- 引入 Animate.css 动画库 -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
+    />
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        line-height: 1.6;
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      h1,
+      h2 {
+        color: #333;
+      }
+      .demo-container {
+        background-color: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .array-display {
+        display: flex;
+        justify-content: center;
+        margin: 20px 0;
+        flex-wrap: wrap;
+        min-height: 100px;
+      }
+      .array-item {
+        width: 60px;
+        height: 60px;
+        background-color: #4caf50;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 5px;
+        border-radius: 4px;
+        font-weight: bold;
+        font-size: 18px;
+        position: relative;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s ease;
+      }
+      .array-item.new {
+        background-color: #2196f3;
+      }
+      .array-item.highlight {
+        background-color: #ff9800;
+        transform: scale(1.1);
+      }
+      .array-item.index {
+        position: absolute;
+        top: -20px;
+        font-size: 12px;
+        color: #666;
+        font-weight: normal;
+      }
+      .controls {
+        margin: 20px 0;
+        text-align: center;
+      }
+      button {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        margin: 0 5px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        font-size: 14px;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      .explanation {
+        background-color: #f9f9f9;
+        padding: 15px;
+        border-radius: 4px;
+        margin-top: 15px;
+        border-left: 4px solid #4caf50;
+      }
+      .code {
+        background-color: #f0f0f0;
+        padding: 10px;
+        border-radius: 4px;
+        font-family: monospace;
+        overflow-x: auto;
+        font-size: 14px;
+      }
+      .result-container {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #e8f5e9;
+        border-radius: 4px;
+      }
+      .process-steps {
+        margin: 15px 0;
+        padding: 10px;
+        background-color: #e3f2fd;
+        border-radius: 4px;
+      }
+      .step {
+        margin: 5px 0;
+        padding: 5px;
+        background-color: #fff;
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <h1 class="animate__animated animate__fadeIn">
+        JavaScript 数组操作方法动画演示
+      </h1>
+
+      <!-- 数组方法演示组件 -->
+      <div
+        v-for="(demo, index) in demos"
+        :key="index"
+        class="demo-container animate__animated animate__fadeInUp"
+      >
+        <h2>{{ demo.title }}</h2>
+        <div class="controls">
+          <button
+            v-for="(btn, btnIndex) in demo.buttons"
+            :key="btnIndex"
+            @click="runDemo(demo.method, btn.action)"
+          >
+            {{ btn.text }}
+          </button>
+          <button @click="resetDemo(demo.method)">重置</button>
+        </div>
+
+        <!-- 原始数组显示 -->
+        <div class="array-display">
+          <h3 v-if="demo.showTitle">原始数组:</h3>
+          <div
+            v-for="(item, itemIndex) in demo.originalArray"
+            :key="'original-'+itemIndex"
+            class="array-item"
+            :class="{
+                        'highlight': demo.highlightIndex === itemIndex,
+                        'new': demo.newItems.includes(itemIndex)
+                    }"
+          >
+            {{ item }}
+            <span class="index">{{ itemIndex }}</span>
+          </div>
+        </div>
+
+        <!-- 结果数组显示 -->
+        <div class="result-container" v-if="demo.showResult">
+          <h3>{{ demo.resultTitle }}</h3>
+          <div
+            v-for="(item, itemIndex) in demo.resultArray"
+            :key="'result-'+itemIndex"
+            class="array-item new"
+          >
+            {{ item }}
+            <span class="index">{{ itemIndex }}</span>
+          </div>
+        </div>
+
+        <!-- 归并过程显示 -->
+        <div class="process-steps" v-if="demo.showProcess">
+          <h3>归并过程:</h3>
+          <div
+            class="step"
+            v-for="(step, stepIndex) in demo.processSteps"
+            :key="'step-'+stepIndex"
+          >
+            {{ step }}
+          </div>
+        </div>
+
+        <!-- 方法说明 -->
+        <div class="explanation">
+          <p><strong>{{ demo.method }}</strong> {{ demo.description }}</p>
+          <div class="code">{{ demo.exampleCode }}</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const { createApp, ref, reactive } = Vue;
+
+      createApp({
+        setup() {
+          // 初始化数组状态
+          const initialArrays = {
+            push: [1, 2, 3],
+            pop: [1, 2, 3],
+            shift: [1, 2, 3],
+            unshift: [1, 2, 3],
+            splice: [1, 2, 3, 4, 5],
+            slice: [1, 2, 3, 4, 5],
+            concat1: [1, 2],
+            concat2: [3, 4],
+            sort: [3, 1, 4, 2, 5],
+            reverse: [1, 2, 3, 4, 5],
+            map: [1, 2, 3],
+            filter: [1, 2, 3, 4, 5],
+            reduce: [1, 2, 3, 4],
+          };
+
+          // 演示配置
+          const demos = reactive([
+            {
+              title: "1. push() - 向数组末尾添加元素",
+              method: "push",
+              originalArray: [...initialArrays.push],
+              highlightIndex: -1,
+              newItems: [],
+              showResult: false,
+              showProcess: false,
+              showTitle: false,
+              resultTitle: "push() 方法返回新数组长度",
+              resultArray: [],
+              processSteps: [],
+              description:
+                "方法将一个或多个元素添加到数组的末尾，并返回数组的新长度。",
+              exampleCode: `const arr = [1, 2, 3];\narr.push(4); // 返回 4\n// arr 现在是 [1, 2, 3, 4]`,
+              buttons: [{ text: "开始演示", action: "default" }],
+            },
+            {
+              title: "2. pop() - 移除数组最后一个元素",
+              method: "pop",
+              originalArray: [...initialArrays.pop],
+              highlightIndex: -1,
+              newItems: [],
+              showResult: false,
+              showProcess: false,
+              showTitle: false,
+              resultTitle: "pop() 方法返回被删除的元素",
+              resultArray: [],
+              processSteps: [],
+              description: "方法从数组中删除最后一个元素，并返回该元素的值。",
+              exampleCode: `const arr = [1, 2, 3];\narr.pop(); // 返回 3\n// arr 现在是 [1, 2]`,
+              buttons: [{ text: "开始演示", action: "default" }],
+            },
+            {
+              title: "3. shift() - 移除数组第一个元素",
+              method: "shift",
+              originalArray: [...initialArrays.shift],
+              highlightIndex: -1,
+              newItems: [],
+              showResult: false,
+              showProcess: false,
+              showTitle: false,
+              resultTitle: "shift() 方法返回被删除的元素",
+              resultArray: [],
+              processSteps: [],
+              description: "方法从数组中删除第一个元素，并返回该元素的值。",
+              exampleCode: `const arr = [1, 2, 3];\narr.shift(); // 返回 1\n// arr 现在是 [2, 3]`,
+              buttons: [{ text: "开始演示", action: "default" }],
+            },
+            {
+              title: "4. unshift() - 向数组开头添加元素",
+              method: "unshift",
+              originalArray: [...initialArrays.unshift],
+              highlightIndex: -1,
+              newItems: [],
+              showResult: false,
+              showProcess: false,
+              showTitle: false,
+              resultTitle: "unshift() 方法返回新数组长度",
+              resultArray: [],
+              processSteps: [],
+              description:
+                "方法将一个或多个元素添加到数组的开头，并返回数组的新长度。",
+              exampleCode: `const arr = [1, 2, 3];\narr.unshift(0); // 返回 4\n// arr 现在是 [0, 1, 2, 3]`,
+              buttons: [{ text: "开始演示", action: "default" }],
+            },
+            {
+              title: "5. splice() - 添加/删除数组元素",
+              method: "splice",
+              originalArray: [...initialArrays.splice],
+              highlightIndex: -1,
+              newItems: [],
+              showResult: false,
+              showProcess: false,
+              showTitle: false,
+              resultTitle: "splice() 方法操作结果",
+              resultArray: [],
+              processSteps: [],
+              description:
+                "方法通过删除或替换现有元素或者原地添加新的元素来修改数组。",
+              exampleCode: `// 删除元素\narr.splice(1, 2); // 从索引1开始删除2个元素\n\n// 添加元素\narr.splice(2, 0, 'a', 'b'); // 从索引2开始添加元素\n\n// 替换元素\narr.splice(1, 1, 'new'); // 替换索引1的元素`,
+              buttons: [
+                { text: "演示删除", action: "remove" },
+                { text: "演示添加", action: "add" },
+                { text: "演示替换", action: "replace" },
+              ],
+            },
+            {
+              title: "6. slice() - 提取数组的一部分",
+              method: "slice",
+              originalArray: [...initialArrays.slice],
+              highlightIndex: -1,
+              newItems: [],
+              showResult: false,
+              showProcess: false,
+              showTitle: false,
+              resultTitle: "slice() 方法提取结果 (索引1到4)",
+              resultArray: [],
+              processSteps: [],
+              description:
+                "方法返回一个新的数组对象，包含从开始到结束（不包括结束）的数组元素。",
+              exampleCode: `const arr = [1, 2, 3, 4, 5];\nconst newArr = arr.slice(1, 4);\n// newArr 是 [2, 3, 4]`,
+              buttons: [{ text: "开始演示", action: "default" }],
+            },
+            {
+              title: "7. concat() - 合并数组",
+              method: "concat",
+              originalArray: [...initialArrays.concat1],
+              highlightIndex: -1,
+              newItems: [],
+              showResult: false,
+              showProcess: false,
+              showTitle: true,
+              resultTitle: "concat() 方法合并结果",
+              resultArray: [],
+              processSteps: [],
+              description: "方法用于合并两个或多个数组，返回一个新数组。",
+              exampleCode: `const arr1 = [1, 2];\nconst arr2 = [3, 4];\nconst newArr = arr1.concat(arr2);\n// newArr 是 [1, 2, 3, 4]`,
+              buttons: [{ text: "开始演示", action: "default" }],
+            },
+            {
+              title: "8. sort() - 数组排序",
+              method: "sort",
+              originalArray: [...initialArrays.sort],
+              highlightIndex: -1,
+              newItems: [],
+              showResult: false,
+              showProcess: false,
+              showTitle: false,
+              resultTitle: "sort() 方法排序结果",
+              resultArray: [],
+              processSteps: [],
+              description: "方法对数组的元素进行排序，并返回数组。",
+              exampleCode: `// 升序排序\narr.sort((a, b) => a - b);\n\n// 降序排序\narr.sort((a, b) => b - a);\n\n// 随机排序\narr.sort(() => Math.random() - 0.5);`,
+              buttons: [
+                { text: "升序排序", action: "asc" },
+                { text: "降序排序", action: "desc" },
+                { text: "随机排序", action: "random" },
+              ],
+            },
+            {
+              title: "9. reverse() - 反转数组",
+              method: "reverse",
+              originalArray: [...initialArrays.reverse],
+              highlightIndex: -1,
+              newItems: [],
+              showResult: false,
+              showProcess: false,
+              showTitle: false,
+              resultTitle: "reverse() 方法反转结果",
+              resultArray: [],
+              processSteps: [],
+              description: "方法将数组中元素的位置颠倒，并返回该数组。",
+              exampleCode: `const arr = [1, 2, 3, 4, 5];\narr.reverse();\n// arr 现在是 [5, 4, 3, 2, 1]`,
+              buttons: [{ text: "开始演示", action: "default" }],
+            },
+            {
+              title: "10. map() - 数组映射",
+              method: "map",
+              originalArray: [...initialArrays.map],
+              highlightIndex: -1,
+              newItems: [],
+              showResult: false,
+              showProcess: false,
+              showTitle: true,
+              resultTitle: "map() 方法映射结果 (每个元素乘以2)",
+              resultArray: [],
+              processSteps: [],
+              description:
+                "方法创建一个新数组，其结果是该数组中的每个元素调用一次提供的函数后的返回值。",
+              exampleCode: `const arr = [1, 2, 3];\nconst newArr = arr.map(item => item * 2);\n// newArr 是 [2, 4, 6]`,
+              buttons: [{ text: "开始演示", action: "default" }],
+            },
+            {
+              title: "11. filter() - 数组过滤",
+              method: "filter",
+              originalArray: [...initialArrays.filter],
+              highlightIndex: -1,
+              newItems: [],
+              showResult: false,
+              showProcess: false,
+              showTitle: true,
+              resultTitle: "filter() 方法过滤结果 (保留偶数)",
+              resultArray: [],
+              processSteps: [],
+              description:
+                "方法创建一个新数组，其包含通过所提供函数实现的测试的所有元素。",
+              exampleCode: `const arr = [1, 2, 3, 4, 5];\nconst newArr = arr.filter(item => item % 2 === 0);\n// newArr 是 [2, 4]`,
+              buttons: [{ text: "开始演示", action: "default" }],
+            },
+            {
+              title: "12. reduce() - 数组归并",
+              method: "reduce",
+              originalArray: [...initialArrays.reduce],
+              highlightIndex: -1,
+              newItems: [],
+              showResult: false,
+              showProcess: false,
+              showTitle: true,
+              resultTitle: "reduce() 方法归并结果 (所有元素的和)",
+              resultArray: [],
+              processSteps: [],
+              description:
+                "方法对数组中的每个元素执行一个由您提供的reducer函数，将其结果汇总为单个返回值。",
+              exampleCode: `const arr = [1, 2, 3, 4];\nconst sum = arr.reduce((acc, curr) => acc + curr, 0);\n// sum 是 10`,
+              buttons: [{ text: "开始演示", action: "default" }],
+            },
+          ]);
+
+          // 运行演示
+          const runDemo = (method, action = "default") => {
+            const demo = demos.find((d) => d.method === method);
+            if (!demo) return;
+
+            // 重置演示状态
+            demo.highlightIndex = -1;
+            demo.newItems = [];
+            demo.showResult = false;
+            demo.showProcess = false;
+
+            // 执行对应的演示方法
+            switch (method) {
+              case "push":
+                demoPush(demo);
+                break;
+              case "pop":
+                demoPop(demo);
+                break;
+              case "shift":
+                demoShift(demo);
+                break;
+              case "unshift":
+                demoUnshift(demo);
+                break;
+              case "splice":
+                demoSplice(demo, action);
+                break;
+              case "slice":
+                demoSlice(demo);
+                break;
+              case "concat":
+                demoConcat(demo);
+                break;
+              case "sort":
+                demoSort(demo, action);
+                break;
+              case "reverse":
+                demoReverse(demo);
+                break;
+              case "map":
+                demoMap(demo);
+                break;
+              case "filter":
+                demoFilter(demo);
+                break;
+              case "reduce":
+                demoReduce(demo);
+                break;
+            }
+          };
+
+          // 重置演示
+          const resetDemo = (method) => {
+            const demo = demos.find((d) => d.method === method);
+            if (!demo) return;
+
+            demo.originalArray = [...initialArrays[method]];
+            demo.highlightIndex = -1;
+            demo.newItems = [];
+            demo.showResult = false;
+            demo.showProcess = false;
+            demo.resultArray = [];
+            demo.processSteps = [];
+
+            // 特殊处理concat方法
+            if (method === "concat") {
+              demo.originalArray = [...initialArrays.concat1];
+            }
+          };
+
+          // 1. push() 方法演示
+          const demoPush = (demo) => {
+            // 高亮最后一个元素
+            demo.highlightIndex = demo.originalArray.length - 1;
+
+            // 添加新元素
+            setTimeout(() => {
+              demo.newItems = [demo.originalArray.length];
+              demo.originalArray.push(demo.originalArray.length + 1);
+              demo.showResult = true;
+              demo.resultArray = [`新长度: ${demo.originalArray.length}`];
+            }, 500);
+          };
+
+          // 2. pop() 方法演示
+          const demoPop = (demo) => {
+            // 高亮最后一个元素
+            demo.highlightIndex = demo.originalArray.length - 1;
+
+            setTimeout(() => {
+              const popped = demo.originalArray.pop();
+              demo.showResult = true;
+              demo.resultArray = [`被删除的元素: ${popped}`];
+            }, 500);
+          };
+
+          // 3. shift() 方法演示
+          const demoShift = (demo) => {
+            // 高亮第一个元素
+            demo.highlightIndex = 0;
+
+            setTimeout(() => {
+              const shifted = demo.originalArray.shift();
+              demo.showResult = true;
+              demo.resultArray = [`被删除的元素: ${shifted}`];
+            }, 500);
+          };
+
+          // 4. unshift() 方法演示
+          const demoUnshift = (demo) => {
+            // 高亮第一个元素
+            demo.highlightIndex = 0;
+
+            setTimeout(() => {
+              demo.newItems = [0];
+              demo.originalArray.unshift(0);
+              demo.showResult = true;
+              demo.resultArray = [`新长度: ${demo.originalArray.length}`];
+            }, 500);
+          };
+
+          // 5. splice() 方法演示
+          const demoSplice = (demo, action) => {
+            const index = 2;
+
+            if (action === "remove") {
+              // 删除元素
+              demo.highlightIndex = index;
+
+              setTimeout(() => {
+                const removed = demo.originalArray.splice(index, 1);
+                demo.showResult = true;
+                demo.resultArray = [`被删除的元素: ${removed.join(", ")}`];
+              }, 500);
+            } else if (action === "add") {
+              // 添加元素
+              demo.highlightIndex = index;
+
+              setTimeout(() => {
+                demo.originalArray.splice(index, 0, "a", "b");
+                demo.newItems = [index, index + 1];
+                demo.showResult = true;
+                demo.resultArray = [`新长度: ${demo.originalArray.length}`];
+              }, 500);
+            } else if (action === "replace") {
+              // 替换元素
+              demo.highlightIndex = index;
+
+              setTimeout(() => {
+                const replaced = demo.originalArray.splice(index, 1, "new");
+                demo.newItems = [index];
+                demo.showResult = true;
+                demo.resultArray = [`被替换的元素: ${replaced.join(", ")}`];
+              }, 500);
+            }
+          };
+
+          // 6. slice() 方法演示
+          const demoSlice = (demo) => {
+            // 高亮选中的元素
+            for (let i = 1; i < 4; i++) {
+              setTimeout(() => {
+                demo.highlightIndex = i;
+              }, i * 200);
+            }
+
+            setTimeout(() => {
+              demo.showResult = true;
+              demo.resultArray = demo.originalArray.slice(1, 4);
+              demo.highlightIndex = -1;
+            }, 1000);
+          };
+
+          // 7. concat() 方法演示
+          const demoConcat = (demo) => {
+            demo.showResult = true;
+            demo.resultArray = [
+              ...demo.originalArray,
+              ...initialArrays.concat2,
+            ];
+          };
+
+          // 8. sort() 方法演示
+          const demoSort = (demo, action) => {
+            if (action === "asc") {
+              demo.originalArray.sort((a, b) => a - b);
+            } else if (action === "desc") {
+              demo.originalArray.sort((a, b) => b - a);
+            } else {
+              demo.originalArray.sort(() => Math.random() - 0.5);
+            }
+            demo.showResult = true;
+            demo.resultArray = demo.originalArray;
+          };
+
+          // 9. reverse() 方法演示
+          const demoReverse = (demo) => {
+            demo.originalArray.reverse();
+            demo.showResult = true;
+            demo.resultArray = demo.originalArray;
+          };
+
+          // 10. map() 方法演示
+          const demoMap = (demo) => {
+            demo.showResult = true;
+            demo.resultArray = demo.originalArray.map((item) => item * 2);
+          };
+
+          // 11. filter() 方法演示
+          const demoFilter = (demo) => {
+            demo.showResult = true;
+            demo.resultArray = demo.originalArray.filter(
+              (item) => item % 2 === 0
+            );
+          };
+
+          // 12. reduce() 方法演示
+          const demoReduce = (demo) => {
+            demo.showProcess = true;
+            demo.processSteps = [];
+
+            let sum = 0;
+            demo.originalArray.forEach((item, index) => {
+              setTimeout(() => {
+                demo.highlightIndex = index;
+                sum += item;
+                demo.processSteps.push(`${sum - item} + ${item} = ${sum}`);
+
+                if (index === demo.originalArray.length - 1) {
+                  demo.showResult = true;
+                  demo.resultArray = [`总和: ${sum}`];
+                  demo.highlightIndex = -1;
+                }
+              }, index * 800);
+            });
+          };
+
+          return {
+            demos,
+            runDemo,
+            resetDemo,
+          };
+        },
+      }).mount("#app");
+    </script>
+  </body>
+</html>
