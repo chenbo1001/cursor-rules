@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JavaScript 对象动态属性动画演示</title>
+    <!-- 引入 Vue 3 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.47/dist/vue.global.min.js"></script>
+    <!-- 引入 GSAP 动画库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <!-- 引入 Animate.css 动画库 -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
+    />
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        line-height: 1.6;
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      h1,
+      h2 {
+        color: #333;
+      }
+      .demo-container {
+        background-color: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .object-display {
+        display: flex;
+        flex-direction: column;
+        margin: 20px 0;
+        min-height: 100px;
+      }
+      .property-item {
+        display: flex;
+        align-items: center;
+        margin: 5px 0;
+        padding: 10px;
+        background-color: #e3f2fd;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+      }
+      .property-item.new {
+        background-color: #e8f5e9;
+      }
+      .property-item.highlight {
+        background-color: #fff8e1;
+        transform: scale(1.02);
+      }
+      .property-key {
+        font-weight: bold;
+        min-width: 150px;
+        color: #2196f3;
+      }
+      .property-value {
+        color: #4caf50;
+      }
+      .controls {
+        margin: 20px 0;
+        text-align: center;
+      }
+      button {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        margin: 0 5px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        font-size: 14px;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      .explanation {
+        background-color: #f9f9f9;
+        padding: 15px;
+        border-radius: 4px;
+        margin-top: 15px;
+        border-left: 4px solid #4caf50;
+      }
+      .code {
+        background-color: #f0f0f0;
+        padding: 10px;
+        border-radius: 4px;
+        font-family: monospace;
+        overflow-x: auto;
+        font-size: 14px;
+      }
+      .result-container {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #e8f5e9;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <h1 class="animate__animated animate__fadeIn">
+        JavaScript 对象动态属性动画演示
+      </h1>
+
+      <!-- 动态属性演示组件 -->
+      <div
+        v-for="(demo, index) in demos"
+        :key="index"
+        class="demo-container animate__animated animate__fadeInUp"
+      >
+        <h2>{{ demo.title }}</h2>
+        <div class="controls">
+          <button
+            v-for="(btn, btnIndex) in demo.buttons"
+            :key="btnIndex"
+            @click="runDemo(demo.method, btn.action)"
+          >
+            {{ btn.text }}
+          </button>
+          <button @click="resetDemo(demo.method)">重置</button>
+        </div>
+
+        <!-- 原始对象显示 -->
+        <div class="object-display">
+          <h3>原始对象:</h3>
+          <div
+            v-for="(value, key) in demo.originalObject"
+            :key="'original-'+key"
+            class="property-item"
+            :class="{
+                        'highlight': demo.highlightKey === key,
+                        'new': demo.newKeys.includes(key)
+                    }"
+          >
+            <span class="property-key">{{ key }}:</span>
+            <span class="property-value">{{ value }}</span>
+          </div>
+        </div>
+
+        <!-- 结果对象显示 -->
+        <div class="result-container" v-if="demo.showResult">
+          <h3>{{ demo.resultTitle }}</h3>
+          <div
+            v-for="(value, key) in demo.resultObject"
+            :key="'result-'+key"
+            class="property-item new"
+          >
+            <span class="property-key">{{ key }}:</span>
+            <span class="property-value">{{ value }}</span>
+          </div>
+        </div>
+
+        <!-- 方法说明 -->
+        <div class="explanation">
+          <p><strong>{{ demo.method }}</strong> {{ demo.description }}</p>
+          <div class="code">{{ demo.exampleCode }}</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const { createApp, reactive } = Vue;
+
+      const app = createApp({
+        setup() {
+          // 初始化对象状态
+          const initialObjects = {
+            dynamicProperty: {
+              name: "张三",
+              age: 25,
+            },
+            enumMapping: {
+              name: "李四",
+              age: 30,
+            },
+            apiTransform: {
+              user1: { id: 1, type: "admin" },
+              user2: { id: 2, type: "user" },
+            },
+            i18n: {
+              en: { hello: "Hello" },
+              zh: { hello: "你好" },
+            },
+            cache: {},
+          };
+
+          // 演示配置
+          const demos = reactive([
+            {
+              title: "1. 动态属性名",
+              method: "dynamicProperty",
+              originalObject: { ...initialObjects.dynamicProperty },
+              highlightKey: "",
+              newKeys: [],
+              showResult: false,
+              resultTitle: "动态添加属性结果",
+              resultObject: {},
+              description: "使用方括号语法动态添加对象属性",
+              exampleCode: `const key = 'dynamicKey';\nconst obj = { name: '张三' };\nobj[key] = '动态值'; // 添加动态属性\n// obj 现在是 { name: '张三', dynamicKey: '动态值' }`,
+              buttons: [{ text: "添加属性", action: "add" }],
+            },
+            {
+              title: "2. 枚举映射",
+              method: "enumMapping",
+              originalObject: { ...initialObjects.enumMapping },
+              highlightKey: "",
+              newKeys: [],
+              showResult: false,
+              resultTitle: "枚举映射结果",
+              resultObject: {},
+              description: "使用枚举值作为对象键名",
+              exampleCode: `enum USER_TYPE {\n  Admin = 'admin',\n  User = 'user'\n};\n\nconst roleMap = {\n  [USER_TYPE.Admin]: '管理员',\n  [USER_TYPE.User]: '普通用户'\n};`,
+              buttons: [{ text: "应用枚举", action: "apply" }],
+            },
+            {
+              title: "3. API数据转换",
+              method: "apiTransform",
+              originalObject: { ...initialObjects.apiTransform },
+              highlightKey: "",
+              newKeys: [],
+              showResult: false,
+              resultTitle: "转换后的API数据",
+              resultObject: {},
+              description: "将API响应数据转换为更易用的格式",
+              exampleCode: `const apiResponse = [\n  { id: 1, type: 'admin' },\n  { id: 2, type: 'user' }\n];\n\nconst result = apiResponse.reduce((acc, item) => ({\n  ...acc,\n  [item.type]: { id: item.id } // 动态键名\n}), {});`,
+              buttons: [{ text: "转换数据", action: "transform" }],
+            },
+            {
+              title: "4. 国际化(i18n)映射",
+              method: "i18n",
+              originalObject: { ...initialObjects.i18n },
+              highlightKey: "",
+              newKeys: [],
+              showResult: false,
+              resultTitle: "当前语言文本",
+              resultObject: {},
+              description: "使用动态属性实现国际化文本映射",
+              exampleCode: `const LANGUAGE = {\n  EN: 'en',\n  ZH: 'zh'\n};\n\nconst translations = {\n  [LANGUAGE.EN]: { hello: 'Hello' },\n  [LANGUAGE.ZH]: { hello: '你好' }\n};\n\nconst currentLang = LANGUAGE.ZH;\ntranslations[currentLang].hello; // 输出 '你好'`,
+              buttons: [
+                { text: "中文", action: "zh" },
+                { text: "英文", action: "en" },
+              ],
+            },
+            {
+              title: "5. 缓存计算结果",
+              method: "cache",
+              originalObject: { ...initialObjects.cache },
+              highlightKey: "",
+              newKeys: [],
+              showResult: false,
+              resultTitle: "缓存计算结果",
+              resultObject: {},
+              description: "使用动态属性名实现计算结果缓存",
+              exampleCode: `const cache = {};\n\nfunction expensiveCalculation(input) {\n  if (cache[input] !== undefined) {\n    return cache[input]; // 返回缓存结果\n  }\n\n  const result = /* 复杂计算 */;\n  cache[input] = result; // 缓存结果\n  return result;\n}`,
+              buttons: [{ text: "计算并缓存", action: "calculate" }],
+            },
+          ]);
+
+          // 运行演示
+          const runDemo = (method, action = "default") => {
+            const demo = demos.find((d) => d.method === method);
+            if (!demo) return;
+
+            // 重置演示状态
+            demo.highlightKey = "";
+            demo.newKeys = [];
+            demo.showResult = false;
+
+            // 执行对应的演示方法
+            switch (method) {
+              case "dynamicProperty":
+                demoDynamicProperty(demo, action);
+                break;
+              case "enumMapping":
+                demoEnumMapping(demo, action);
+                break;
+              case "apiTransform":
+                demoApiTransform(demo, action);
+                break;
+              case "i18n":
+                demoI18n(demo, action);
+                break;
+              case "cache":
+                demoCache(demo, action);
+                break;
+            }
+          };
+
+          // 重置演示
+          const resetDemo = (method) => {
+            const demo = demos.find((d) => d.method === method);
+            if (!demo) return;
+
+            demo.originalObject = { ...initialObjects[method] };
+            demo.highlightKey = "";
+            demo.newKeys = [];
+            demo.showResult = false;
+            demo.resultObject = {};
+          };
+
+          // 1. 动态属性名演示
+          const demoDynamicProperty = (demo) => {
+            const newKey = "dynamicProp";
+            const newValue = "动态添加的值";
+
+            // 高亮原始对象
+            demo.highlightKey = "name";
+
+            setTimeout(() => {
+              // 添加动态属性
+              demo.newKeys = [newKey];
+              demo.originalObject[newKey] = newValue;
+
+              // 显示结果
+              demo.showResult = true;
+              demo.resultObject = {
+                message: `已添加属性: ${newKey}`,
+                [newKey]: newValue,
+              };
+
+              // 动画效果
+              gsap.from(`.property-item.new`, {
+                opacity: 0,
+                y: 20,
+                duration: 0.8,
+                ease: "back.out",
+              });
+            }, 500);
+          };
+
+          // 2. 枚举映射演示
+          const demoEnumMapping = (demo) => {
+            // 定义枚举
+            const USER_TYPE = {
+              Admin: "admin",
+              User: "user",
+            };
+
+            // 高亮原始对象
+            demo.highlightKey = "name";
+
+            setTimeout(() => {
+              // 创建枚举映射
+              demo.resultObject = {
+                [USER_TYPE.Admin]: "管理员",
+                [USER_TYPE.User]: "普通用户",
+              };
+
+              demo.showResult = true;
+
+              // 动画效果
+              gsap.from(`.result-container .property-item`, {
+                opacity: 0,
+                x: 20,
+                stagger: 0.2,
+                duration: 0.6,
+              });
+            }, 500);
+          };
+
+          // 3. API数据转换演示
+          const demoApiTransform = (demo) => {
+            // 高亮原始对象
+            demo.highlightKey = "user1";
+
+            setTimeout(() => {
+              // 转换API数据
+              const transformed = {};
+              Object.entries(demo.originalObject).forEach(([key, value]) => {
+                transformed[value.type] = { id: value.id };
+              });
+
+              demo.resultObject = transformed;
+              demo.showResult = true;
+
+              // 动画效果
+              gsap.from(`.result-container .property-item`, {
+                opacity: 0,
+                y: 20,
+                stagger: 0.2,
+                duration: 0.6,
+              });
+            }, 500);
+          };
+
+          // 4. 国际化(i18n)演示
+          const demoI18n = (demo, action) => {
+            const lang = action === "zh" ? "zh" : "en";
+
+            // 高亮选中的语言
+            demo.highlightKey = lang;
+
+            setTimeout(() => {
+              demo.resultObject = {
+                currentLanguage: lang,
+                greeting: demo.originalObject[lang].hello,
+              };
+
+              demo.showResult = true;
+
+              // 动画效果
+              gsap.from(`.result-container .property-item`, {
+                opacity: 0,
+                x: -20,
+                stagger: 0.2,
+                duration: 0.6,
+              });
+            }, 500);
+          };
+
+          // 5. 缓存计算结果演示
+          const demoCache = (demo) => {
+            const input = "complex-calculation";
+            const result = Math.floor(Math.random() * 1000);
+
+            // 模拟第一次计算
+            demo.highlightKey = "";
+            demo.originalObject[input] = result;
+            demo.newKeys = [input];
+
+            setTimeout(() => {
+              demo.resultObject = {
+                message: `计算结果已缓存`,
+                [input]: result,
+              };
+
+              demo.showResult = true;
+
+              // 动画效果
+              gsap.from(`.property-item.new`, {
+                opacity: 0,
+                scale: 0.8,
+                duration: 0.8,
+                ease: "back.out",
+              });
+            }, 500);
+          };
+
+          return {
+            demos,
+            runDemo,
+            resetDemo,
+          };
+        },
+      });
+
+      app.mount("#app");
+    </script>
+  </body>
+</html>
